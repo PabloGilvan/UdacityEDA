@@ -1,0 +1,161 @@
+'---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(gridExtra)
+library(readr)
+library(stringr)
+library(reshape2)
+library(stringi)
+library(lubridate)
+# SE ESTIVER USANDO MAC, Setando Encoding
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+```
+
+## Carregando dados
+```{r}
+
+infracoes  <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = '2018/dez.csv', sep = ",")
+```
+
+```{r}
+nrow(infracoes)
+```
+
+
+#### Carregando o conjunto de dados que lista o descritivo de cada infração do CBT
+```{r}
+tbl_infracao <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'dominio/tbl_infracao.csv')
+head(tbl_infracao)
+```
+
+#### Inicialmente vamos listar as 10 infrações que mais aparecem no conjunto de dados.
+```{r}
+infracoes_mais_comuns <- group_by(infracoes, cod_infracao)%>%
+  summarise(registros=n()) %>%
+  arrange(-registros) %>%
+  head(n = 10)
+
+infracoes_mais_comuns
+```
+
+Agora vamos associar os registros das Infrações Mais Comuns com o descritivo de cada infração
+
+```{r}
+infracoes_mais_comuns <- infracoes_mais_comuns %>%
+  left_join(tbl_infracao, by = "cod_infracao") 
+
+infracoes_mais_comuns
+```
+
+Podemos notar que um registro não estava no conjunto de dados de Infrações: 72422
+Buscando no Código Brasileiro de Trânsito não consegui localizar via código de multa, acessando o site
+do governo do Tocantins encontrei um documento que especifica o código como:
+
+72422 - Em movimento de dia, deixar de manter acesa luz baixa nas rodovias.
+Valor: $ 130.16 
+Consultar CTB Municipal/Rodov 250, I, b
+https://central3.to.gov.br/arquivo/320049/
+
+
+```{r}
+infracoes_mais_comuns$des_infracao[infracoes_mais_comuns$cod_infracao == 72422] <- "Em movimento de dia, deixar de manter acesa luz
+baixa nas rodovias."
+
+infracoes_mais_comuns$valor[infracoes_mais_comuns$cod_infracao == 72422] <- "130.16"
+
+infracoes_mais_comuns$enquadramento[infracoes_mais_comuns$cod_infracao == 72422] <- "250 I, b"
+
+infracoes_mais_comuns
+```
+
+Para podermos usar os dados de forma a categorizar os mesmos, precisamos primeiro converter os identificadores das infrações de
+Inteiro para Factor.
+
+```{r}
+infracoes_mais_comuns$cod_infracao <- as.factor(infracoes_mais_comuns$cod_infracao)
+infracoes$cod_infracao <- as.factor(infracoes$cod_infracao)
+```
+
+
+Ok, agora podemos plotar os registros e assim ter um comparativo mais visual dos dados.
+
+```{r}
+infracoes_mais_comuns %>%
+  ggplot(mapping = aes(x = cod_infracao, y = registros))+
+    geom_bar(stat = "identity")+
+    geom_text(aes(label=registros), vjust=0, color="red") +
+    labs(title="Infrações com Maior Ocorrência no Período de 2018")+
+    ylab("Quantidade")+
+    xlab("Infração")+
+    theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+         axis.text.x = element_text(angle = 90, hjust = 1),
+         axis.title=element_text(size=14,face="bold"))
+```
+
+Podemos notar que 3 tipos de infrações possuem muito mais ocorrência que as demais, com destaque para a infração de código 74550.
+Gosto sempre de olhar os dados de forma proporcional. Vamos calcular a proporção de doação por tipo.
+
+```{r}
+num_registros <- nrow(infracoes)
+infracoes_mais_comuns$proporcao <- round(infracoes_mais_comuns$registros/num_registros, digits = 2)
+```
+
+Agora podemos plotar como ficou a proporção de infrações por tipo de infração, assim temos uma ideia melhor.
+
+```{r}
+infracoes_mais_comuns %>%
+  ggplot(mapping = aes(x = cod_infracao, y = proporcao))+
+    geom_bar(stat = "identity")+
+    geom_text(aes(label=proporcao), vjust=0, color="red") +
+    labs(title="Infrações com Maior Proporção no Período de 12/2018")+
+    ylab("Proporção")+
+    xlab("Infração")+
+    theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+         axis.text.x = element_text(angle = 90, hjust = 1),
+         axis.title=element_text(size=14,face="bold"))
+```
+
+Com essas 3 infrações temos cerca de 70% de ocorrência. Vamos listar quais são.
+
+```{r}
+top_3 <- infracoes_mais_comuns %>%
+    subset(cod_infracao == 72422 | cod_infracao == 74550 | cod_infracao == 74630)
+top_3$des_infracao
+```
+
+Bacana, agora uma coisa que me deixa curioso é saber o quanto nosso governo está ganhando com isso, visto que somente com esse projeto de lei mais recente(72422) já estar configurando quase 10% das infrações. Vamos calcular o valor que cada grupo de infrações
+rendeu(ou renderá) aos cofres públicos.
+
+Primeiramente temos que converter os valores da coluna 'valor' de character para double, depois vamos multiplicar o valor
+pela quantidade de ocorrências de cada infração.
+
+```{r}
+infracoes_mais_comuns$valor <- as.double(infracoes_mais_comuns$valor)
+infracoes_mais_comuns$arrecadacao <- round(infracoes_mais_comuns$valor * infracoes_mais_comuns$registros, digits = 2)
+total <- sum(infracoes_mais_comuns$arrecadacao)
+paste("R$",format(total, big.mark=".", decimal.mark = ","),sep="")
+```
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
