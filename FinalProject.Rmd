@@ -17,8 +17,7 @@ Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
 
 ## Carregando dados
 ```{r}
-
-infracoes  <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = '2018/dez.csv', sep = ",")
+infracoes  <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'dez.csv', sep = ",")
 ```
 
 ```{r}
@@ -141,6 +140,67 @@ paste("R$",format(total, big.mark=".", decimal.mark = ","),sep="")
 ```
 
     
+### Período do Mês com Mais Infrações
+
+Antes de agrupar por data, vamos converter o valor da coluna 'dat_infracao' para o tipo 'factor', hoje a coluna está com valor
+'character'.
+```{r}
+
+infracoes$dat_infracao <- as.factor(infracoes$dat_infracao)
+
+periodo_maior_ocorrencia <- group_by(infracoes, dat_infracao)%>%
+  summarise(registros=n()) %>%
+  arrange(-registros) %>%
+  head(n = 10)
+
+periodo_maior_ocorrencia
+```
+
+```{r}
+periodo_maior_ocorrencia %>%
+  ggplot(mapping = aes(x = dat_infracao, y = registros))+
+    geom_bar(stat = "identity")+
+    geom_text(aes(label=registros), vjust=0, color="blue") +
+    labs(title="Dias com maior Registros de Infrações: Dez/2018")+
+    ylab("Quantidade")+
+    xlab("Data")+
+    theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+         axis.text.x = element_text(angle = 90, hjust = 1),
+         axis.title=element_text(size=14,face="bold"))
+```
+
+
+### Trecho com maior número de infrações
+Para selecionar os trechos com maior ocorrência de infrações tive também que agrupar por UF, pois visto que temos várias
+rodovias federais e um mesmo valor(ex: 2) de trecho pode corresponder a um entre vários com mesmo valor.
+
+```{r}
+trecho_maior_ocorrencia <- group_by(infracoes, num_km_infracao, uf_infracao)%>%
+  summarise(registros=n()) %>%
+  arrange(-registros) %>%
+  head(n = 10)
+
+trecho_maior_ocorrencia
+```
+
+Para plotar o próximo gráfico, vamos ter que modificar um pouco o formato do conjunto de dados. Vamos ter que primeiramente agrupar
+a coluna 'num_km_infracao' com a coluna 'uf_infracao', assim tornando fácil plotar o gráfico, de forma que consigamos distinguir os kilômetros de mesmo valor, mas com UF diferente.
+
+```{r}
+trecho_maior_ocorrencia %>%
+  ggplot(mapping = aes(x = dat_infracao, y = registros))+
+    geom_bar(stat = "identity")+
+    geom_text(aes(label=registros), vjust=0, color="blue") +
+    labs(title="Dias com maior Registros de Infrações: Dez/2018")+
+    ylab("Quantidade")+
+    xlab("Data")+
+    theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+         axis.text.x = element_text(angle = 90, hjust = 1),
+    
+
+### Período do Mês com Maior Número de Acidentes
+
+### Trecho com maior número de acidentes
 
 
 
