@@ -87,7 +87,7 @@ infracoes_mais_comuns %>%
   ggplot(mapping = aes(x = cod_infracao, y = registros))+
     geom_bar(stat = "identity")+
     geom_text(aes(label=registros), vjust=0, color="red") +
-    labs(title="Infrações com Maior Ocorrência no Período de 2018")+
+    labs(title="Infrações com Maior Ocorrência no Período de 12/2018")+
     ylab("Quantidade")+
     xlab("Infração")+
     theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
@@ -193,17 +193,51 @@ trecho_maior_ocorrencia %>%
     geom_text(aes(label=registros), vjust=0, color="blue") +
     labs(title="Dias com maior Registros de Infrações: Dez/2018")+
     ylab("Quantidade")+
-    xlab("Data")+
-    theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
-         axis.text.x = element_text(angle = 90, hjust = 1),
-    
+    xlab("Data")
+```
+
+```{r}
+acidentes  <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'datatran2018.csv', sep = ";")
+```
+
 
 ### Período do Mês com Maior Número de Acidentes
 
+```{r}
+
+acidentes$data_inversa <- as.factor(acidentes$data_inversa)
+
+periodo_mais_acidentes <- group_by(acidentes, data_inversa)%>%
+  summarise(registros=n()) %>%
+  arrange(-registros) %>%
+  head(n = 10)
+
+periodo_mais_acidentes
+```
+
+
 ### Trecho com maior número de acidentes
 
+```{r}
+trecho_mais_acidentes <- group_by(acidentes, km, uf)%>%
+  summarise(registros=n()) %>%
+  arrange(-registros) %>%
+  head(n = 10)
+
+trecho_mais_acidentes
+```
 
 
+#### Trechos com menor quantidade de infrações registradas
+
+```{r}
+trecho_menor_ocorrencia <- group_by(infracoes, num_km_infracao, uf_infracao)%>%
+  summarise(registros=n()) %>%
+  arrange(registros) %>%
+  head(n = 10)
+
+trecho_menor_ocorrencia
+```
 
 
 
