@@ -28,7 +28,6 @@ nrow(infracoes)
 #### Carregando o conjunto de dados que lista o descritivo de cada infração do CBT
 ```{r}
 tbl_infracao <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'dominio/tbl_infracao.csv')
-head(tbl_infracao)
 ```
 
 #### Inicialmente vamos listar as 10 infrações que mais aparecem no conjunto de dados.
@@ -59,7 +58,7 @@ Valor: $ 130.16
 Consultar CTB Municipal/Rodov 250, I, b
 https://central3.to.gov.br/arquivo/320049/
 
-
+#### Infrações mais comuns
 ```{r}
 infracoes_mais_comuns$des_infracao[infracoes_mais_comuns$cod_infracao == 72422] <- "Em movimento de dia, deixar de manter acesa luz
 baixa nas rodovias."
@@ -68,7 +67,7 @@ infracoes_mais_comuns$valor[infracoes_mais_comuns$cod_infracao == 72422] <- "130
 
 infracoes_mais_comuns$enquadramento[infracoes_mais_comuns$cod_infracao == 72422] <- "250 I, b"
 
-infracoes_mais_comuns
+infracoes_mais_comuns$des_infracao
 ```
 
 Para podermos usar os dados de forma a categorizar os mesmos, precisamos primeiro converter os identificadores das infrações de
@@ -126,8 +125,7 @@ top_3 <- infracoes_mais_comuns %>%
 top_3$des_infracao
 ```
 
-Bacana, agora uma coisa que me deixa curioso é saber o quanto nosso governo está ganhando com isso, visto que somente com esse projeto de lei mais recente(72422) já estar configurando quase 10% das infrações. Vamos calcular o valor que cada grupo de infrações
-rendeu(ou renderá) aos cofres públicos.
+Bacana, agora uma coisa que me deixa curioso é saber o quanto essas infrações estão gerando de valor para os cofres públicos(não quero entrar aqui no mérito de que as multas são um instrumento necessário ou não e nem se as multas ocorrem por questão de má educação no trânsito ou não), visto que somente com esse projeto de lei mais recente(72422) já estar configurando quase 10% das infrações. Vamos calcular o valor que cada grupo de infrações rendeu(ou renderá) aos cofres públicos.
 
 Primeiramente temos que converter os valores da coluna 'valor' de character para double, depois vamos multiplicar o valor
 pela quantidade de ocorrências de cada infração.
@@ -139,11 +137,14 @@ total <- sum(infracoes_mais_comuns$arrecadacao)
 paste("R$",format(total, big.mark=".", decimal.mark = ","),sep="")
 ```
 
+Não quero aqui entrar no mérito do valor em sí e nem se o valor de cada infração é aceitável ou não, quero somente saciar a dúvida de quanto nossa população tem que desenbolsar para pagar por seus erros ou mesmo erros de terceiros. Claro que o valor de uma vida não se compara a nada que possa ser expresso em valor monetário, mais uma vez ressalto que é somente por questões de curiosidade.
     
 ### Período do Mês com Mais Infrações
+A ideia aqui é identificar os 10 dias com maior registro de infrações, tentar achar um paralelo entre finais de semans e feriados com as ocorrências de infrações. Será que o estresse do dia a dia nos faz cometer mais "burradas" ou mesmo a empolgação de finais de semanas e feriados nos levam a "relaxar" no trânsito e acabar cometendo maiores vacilos? Óbvio que somente um gráfico de barras não vais nos responder tais questionamentos, mas seria interessante visualizar tais dados e verificar alguma relação entre feriados/vésperas/finais de semanas com registros de infrações.
 
 Antes de agrupar por data, vamos converter o valor da coluna 'dat_infracao' para o tipo 'factor', hoje a coluna está com valor
 'character'.
+Após isso podemos agrupar os dados. A ideia aqui é listar quais seriam as datas com maior registro de infrações.
 ```{r}
 
 infracoes$dat_infracao <- as.factor(infracoes$dat_infracao)
@@ -153,10 +154,6 @@ periodo_maior_ocorrencia <- group_by(infracoes, dat_infracao)%>%
   arrange(-registros) %>%
   head(n = 10)
 
-periodo_maior_ocorrencia
-```
-
-```{r}
 periodo_maior_ocorrencia %>%
   ggplot(mapping = aes(x = dat_infracao, y = registros))+
     geom_bar(stat = "identity")+
@@ -169,10 +166,14 @@ periodo_maior_ocorrencia %>%
          axis.title=element_text(size=14,face="bold"))
 ```
 
+Dia 22/12 caiu em um sábado, podemos ver que os dois finais de semanas que antecediam os dois principais feriados do ano: natal e ano novo, tiveram um registro de infrações elevados em relação aos outros dias. Com destaque para o natal, que dos 10 dias foi o que teve o segundo menor valor, ficando quase com a mesma quantidade do dia 31 de Dezembro.
+
 
 ### Trecho com maior número de infrações
+
 Para selecionar os trechos com maior ocorrência de infrações tive também que agrupar por UF, pois visto que temos várias
-rodovias federais e um mesmo valor(ex: 2) de trecho pode corresponder a um entre vários com mesmo valor.
+rodovias federais e um mesmo valor(ex: 2) de trecho pode corresponder a um entre vários com mesmo valor. A ideia aqui é tentar identificar
+se temos alguns trechos com maior ocorrência de infrações que os demais.
 
 ```{r}
 trecho_maior_ocorrencia <- group_by(infracoes, num_km_infracao, uf_infracao)%>%
@@ -180,29 +181,34 @@ trecho_maior_ocorrencia <- group_by(infracoes, num_km_infracao, uf_infracao)%>%
   arrange(-registros) %>%
   head(n = 10)
 
-trecho_maior_ocorrencia
-```
-
-Para plotar o próximo gráfico, vamos ter que modificar um pouco o formato do conjunto de dados. Vamos ter que primeiramente agrupar
-a coluna 'num_km_infracao' com a coluna 'uf_infracao', assim tornando fácil plotar o gráfico, de forma que consigamos distinguir os kilômetros de mesmo valor, mas com UF diferente.
-
-```{r}
 trecho_maior_ocorrencia %>%
-  ggplot(mapping = aes(x = dat_infracao, y = registros))+
-    geom_bar(stat = "identity")+
-    geom_text(aes(label=registros), vjust=0, color="blue") +
-    labs(title="Dias com maior Registros de Infrações: Dez/2018")+
+  ggplot(mapping = aes(x = uf_infracao, y = registros))+
+    geom_point()+
+    geom_text(aes(label=num_km_infracao), vjust= -0.5, color="blue") +
+    labs(title="KMs com maior Registro de Infrações - Dez/2018")+
     ylab("Quantidade")+
-    xlab("Data")
+    xlab("Uf ~ Km")
 ```
+
+Os dados nos mostram que dos 10 trechos, com maior ocorrência de infrações, 3 pertencem ao estado do Rio de Janeiro, mas ainda assim nenhum deles com tantas ocorrências quanto o Kilômetro 2 do Distrito Federal.
+
+
+#### Conjunto de dados de Acidentes, fonte: Polícia Rodoviária Federal.
+
+Meu objetivo em listar tais dados é fazer um cruzamento entre os trechos com menor e maior fiscalização e a quantidade de acidentes registrados, tentar analisar se um trechos onde ocorrem o maior registro de infrações possuem um alto índice de acidentes e por isso são mais fiscalizados ou se trechos onde temos uma fiscalização mais "fraca" tendem a ter mais acidentes que locais mais fiscalizados. 
+
+O diferencial deste conjunto de dados é que ele abrange todo o ano de 2018, diferente do conjunto de dados de infrações que abranche somente as infrações do mês de dezembro de 2018.
 
 ```{r}
 acidentes  <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'datatran2018.csv', sep = ";")
+nrow(acidentes)
 ```
 
+O conjunto de dados de acidentes possui 69 mil registros, quantidade bem menor que o conjunto de infrações, isso que abrange o ano inteiro.
+Seria interessante focar no mesmo mês/período do que o conjunto de dados de infrações. Mas inicialmente vou rodar umas visualizações para ter uma ideia de como os dados estão distribuĩdos. 
 
 ### Período do Mês com Maior Número de Acidentes
-
+Listamos as datas com maior quantidade de registros de infrações, vou fazer o mesmo para os registros de acidentes, por mais que o conjunto abrange um período maior, seria interessante se uma das datas do conjunto de infrações aparecesse nos resultados.
 ```{r}
 
 acidentes$data_inversa <- as.factor(acidentes$data_inversa)
@@ -212,9 +218,49 @@ periodo_mais_acidentes <- group_by(acidentes, data_inversa)%>%
   arrange(-registros) %>%
   head(n = 10)
 
-periodo_mais_acidentes
+periodo_mais_acidentes %>%
+  ggplot(mapping = aes(x = data_inversa, y = registros))+
+    geom_bar(stat = "identity")+
+    geom_text(aes(label=registros), vjust=0, color="blue") +
+    labs(title="Dias com maior Registros de Acidentes do ano de 2018")+
+    ylab("Quantidade")+
+    xlab("Data")+
+    theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+         axis.text.x = element_text(angle = 90, hjust = 1),
+         axis.title=element_text(size=14,face="bold"))
 ```
 
+Interessante, o dia 22 de dezembro, que era o dia com maior número de infrações no conjunto anterior(lembrando que em um período menor) 
+se apresentar como o segundo maior dia, podemos dizer que com um empate técnico com o primeiro, com maior quantidade de acidentes.
+
+Seria interessante voltar ao conjunto de infrações e analisar quais foram as infrações mais recorrentes para estes dias. Seriam as infrações que poderiam ocasionar mais fatalidades como alta velocidade e embreaguez ou foram infrações mais voltadas a manutenção de veículos(claro que estas também poderiam ser responsáveis por possíveias acidentes).
+
+```{r}
+infracões_22_dez <- filter(infracoes, dat_infracao == '2018-12-22')
+
+infracões_22_dez %>% 
+  group_by(cod_infracao)%>%
+  summarise(registros=n()) %>%
+  arrange(-registros) %>%
+  head(n = 10) %>%
+  ggplot(mapping = aes(x = cod_infracao, y = registros))+
+    geom_bar(stat = "identity")+
+    geom_text(aes(label=registros), vjust=0, color="blue") +
+    labs(title="Infrações com maiores ocorrências em 22/12/2018")+
+    ylab("Quantidade")+
+    xlab("Infração")+
+    theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+         axis.text.x = element_text(angle = 90, hjust = 1),
+         axis.title=element_text(size=14,face="bold"))
+```
+
+Três tipos de infrações se destacam das demais: 74550, 74630 e 72422. Vamos verificar com a tabela de infrações quais seriam.
+
+```{r}
+tbl_infracao[tbl_infracao$cod_infracao %in% c('74550', '74630', '72422'), ]$des_abreviada
+```
+
+O terceiro registro é a infração de código 72422, que não está no conjunto de dados fornecidos pelo data.gov, pois é o caso da nova lei aprovada ano passado que vizava a utilização dos faróis ligados mesmo em dia claro.
 
 ### Trecho com maior número de acidentes
 
