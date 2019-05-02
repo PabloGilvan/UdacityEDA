@@ -1,8 +1,37 @@
 '---
-title: "R Notebook"
+title: "Analisando Conjunto de dados da Polícia Rodoviária Federal: Infrações e Acidentes em Rodovias Federais"
 output: html_notebook
 ---
 
+Achei interessante trabalhar com tal conjuntos de dados, visto que os mesmos apresentam dados registrados pela entidade responsável por
+fiscalizar e manter a ordem nas rodovias federais de todo o país.
+
+Trabalha-se com dois conjuntos de dados principais:
+
+1 - Infrações de Trãnsito:
+  Arquivo: "dez.csv"
+  Link: https://www.prf.gov.br/arquivos/index.php/s/RRibshM06CTBnGw
+  Período: Dezembro de 2018
+  Dicionário de dados: encontra-se no PDF "Dicionario de Variaveis_infracoes.pdf", ou no 
+                       link: https://www.prf.gov.br/portal/dados-abertos/dicionario-de-dados-infracoes/at_download/file
+                         
+2 - Acidentes Agrupados por ocorrência:
+  Arquivo: "datatran2018.csv"
+  Link: https://www1.prf.gov.br/arquivos/index.php/s/MaC6cieXSFACNWT
+  Período: ano de 2018
+  Dicionário de dados: encontra-se no PDF "Dicionário de Variáveis_ocorrencia_2017.pdf", ou no
+                       link: https://www1.prf.gov.br/arquivos/index.php/s/9JIz6yPXT71l9Gf#pdfviewer
+                       
+Arquivos auxiliares:
+1 - Listagem de Infrações por Código - CTB
+  Arquivo: "tbl_infracao.csv"
+  Link: http://repositorio.dados.gov.br/transportes-transito/transito/multas/dominio.zip
+
+###Objetivo:####
+
+Identificar quais rodovías(Kms/Região) são mais perigosas e se trechos com maior número de infrações registradas remetem a trechos mais perigosos e por isso uma fiscalização mais intensa ou se trechos com mais registros de infrações são trechos com menos acidentes por serem mais fiscalizados? 
+
+  
 ```{r}
 library(tidyverse)
 library(gridExtra)
@@ -17,20 +46,28 @@ Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
 
 ## Carregando dados
 ```{r}
+# Utilizei o encoding ISO-8859-1 pois temos bastantes caractres especiais: acentuação, cedilhas, etc.
 infracoes  <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'dez.csv', sep = ",")
-```
-
-```{r}
 nrow(infracoes)
 ```
 
+Um conjunto de dados com tamanho bem expressívo para um único mês: 727 mil registros. 
+Agora vou carregar o conjunto auxiliar, que detalha cada código de infração registrado no dataframe 'infracoes' através
+da coluna "cod_infracao". Assim saberemos de que se trata a infração registrada, pois no conjunto de dados da PRF eles gravam somente
+o código da infração.
 
 #### Carregando o conjunto de dados que lista o descritivo de cada infração do CBT
 ```{r}
 tbl_infracao <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'dominio/tbl_infracao.csv')
 ```
 
+Vale ressaltar que o conjunto de dados acima não está completamente atualizado, pois como será visto posteriormente infrações mais recentes
+não estão descritas no mesmo. Os dados são de outubro de 2013.
+
+
 #### Inicialmente vamos listar as 10 infrações que mais aparecem no conjunto de dados.
+Vamos começar agrupando as infrações por código e com isso somar quantas infrações de cada tipo foram registrados. Após isso listar as 10 infrações com mais registros.
+
 ```{r}
 infracoes_mais_comuns <- group_by(infracoes, cod_infracao)%>%
   summarise(registros=n()) %>%
@@ -40,7 +77,7 @@ infracoes_mais_comuns <- group_by(infracoes, cod_infracao)%>%
 infracoes_mais_comuns
 ```
 
-Agora vamos associar os registros das Infrações Mais Comuns com o descritivo de cada infração
+Ok, temos uma listagem dos dados, mas, ao menos para minha pessoa, não consigo saber ao certo quais infrações competem cada código. Agora vamos associar os registros das Infrações Mais Comuns com o descritivo de cada infração.
 
 ```{r}
 infracoes_mais_comuns <- infracoes_mais_comuns %>%
@@ -58,7 +95,10 @@ Valor: $ 130.16
 Consultar CTB Municipal/Rodov 250, I, b
 https://central3.to.gov.br/arquivo/320049/
 
-#### Infrações mais comuns
+#### Infrações mais comuns, com descritivo
+
+Vamos então atualizar nosso dataframe de "infracoes_mais_comuns" para que tenhamos um descritivo de quais infrações remetem a cada código. Vale ressaltar que não acho necessário atualizar o dataframe de "infracoes", visto que repetir uma grande quantidade de informações para um conjunto de 700 mil linhas vai consumir mais memória e atrapalhar no processo de análise.
+
 ```{r}
 infracoes_mais_comuns$des_infracao[infracoes_mais_comuns$cod_infracao == 72422] <- "Em movimento de dia, deixar de manter acesa luz
 baixa nas rodovias."
@@ -71,7 +111,7 @@ infracoes_mais_comuns$des_infracao
 ```
 
 Para podermos usar os dados de forma a categorizar os mesmos, precisamos primeiro converter os identificadores das infrações de
-Inteiro para Factor.
+Inteiro para Factor, assim o R não irá tratar os dados como uma variável contínua e sim categórica.
 
 ```{r}
 infracoes_mais_comuns$cod_infracao <- as.factor(infracoes_mais_comuns$cod_infracao)
@@ -117,7 +157,7 @@ infracoes_mais_comuns %>%
          axis.title=element_text(size=14,face="bold"))
 ```
 
-Com essas 3 infrações temos cerca de 70% de ocorrência. Vamos listar quais são.
+Com essas 3 infrações temos cerca de quase 70% de ocorrência. Vamos listar quais são.
 
 ```{r}
 top_3 <- infracoes_mais_comuns %>%
@@ -140,6 +180,7 @@ paste("R$",format(total, big.mark=".", decimal.mark = ","),sep="")
 Não quero aqui entrar no mérito do valor em sí e nem se o valor de cada infração é aceitável ou não, quero somente saciar a dúvida de quanto nossa população tem que desenbolsar para pagar por seus erros ou mesmo erros de terceiros. Claro que o valor de uma vida não se compara a nada que possa ser expresso em valor monetário, mais uma vez ressalto que é somente por questões de curiosidade.
     
 ### Período do Mês com Mais Infrações
+
 A ideia aqui é identificar os 10 dias com maior registro de infrações, tentar achar um paralelo entre finais de semans e feriados com as ocorrências de infrações. Será que o estresse do dia a dia nos faz cometer mais "burradas" ou mesmo a empolgação de finais de semanas e feriados nos levam a "relaxar" no trânsito e acabar cometendo maiores vacilos? Óbvio que somente um gráfico de barras não vais nos responder tais questionamentos, mas seria interessante visualizar tais dados e verificar alguma relação entre feriados/vésperas/finais de semanas com registros de infrações.
 
 Antes de agrupar por data, vamos converter o valor da coluna 'dat_infracao' para o tipo 'factor', hoje a coluna está com valor
@@ -166,7 +207,37 @@ periodo_maior_ocorrencia %>%
          axis.title=element_text(size=14,face="bold"))
 ```
 
-Dia 22/12 caiu em um sábado, podemos ver que os dois finais de semanas que antecediam os dois principais feriados do ano: natal e ano novo, tiveram um registro de infrações elevados em relação aos outros dias. Com destaque para o natal, que dos 10 dias foi o que teve o segundo menor valor, ficando quase com a mesma quantidade do dia 31 de Dezembro.
+Dia 22/12 caiu em um sábado, podemos ver que os dois finais de semanas que antecediam os dois principais feriados do ano: natal e ano novo, tiveram um registro de infrações elevados em relação aos outros dias. Interessante que os dois principais dias com eventos estarem configurando os dois dias com menor registro de infrações entre os 10, com destaque para o natal que dos 10 dias foi o que teve o segundo menor valor, ficando quase com a mesma quantidade do dia 31 de Dezembro.
+
+### Qual seria a proporção de infrações entre dias de semana e finais de semana?
+
+Seria interessante analizar se dias da semana possuem mais infrações que os dias úteis da semana. Será que teríamos uma proporção
+maior de infrações para finais de semana do que para dias de semana?
+
+Primeiramente temos que converter as datas, que hoje estão como 'character' para o tipo 'date' do R.
+
+```{r}
+print(cat('Tipo.: ', typeof(infracoes$dat_infracao)))
+
+infracoes$dat_infracao <- as.Date(infracoes$dat_infracao, "%Y-%m-%d")
+
+#Agora vamos criar uma nova coluna e colocar na mesma qual dia de semana ela representa
+
+infracoes$dia_semana <- as.numeric(format(infracoes$dat_infracao, format = "%u"))
+infracoes$tipo_dia_semana <- ifelse(infracoes$dia_semana >= 6, "Util", "Fim Semana")
+
+agrupado_tipo_dia <- group_by(infracoes, tipo_dia_semana) %>%
+  summarise(registros=n())
+
+agrupado_tipo_dia %>%
+  ggplot(mapping = aes(x = tipo_dia_semana, y = registros))+
+    geom_bar(stat = "identity")+
+    geom_text(aes(label=registros), vjust=0, color="blue") +
+    labs(title="Infrações por Período da Semana Dez/2018")+
+    ylab("Quantidade")+
+    xlab("Período da Semana")
+```
+
 
 
 ### Trecho com maior número de infrações
