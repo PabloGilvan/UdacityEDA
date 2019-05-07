@@ -34,8 +34,14 @@ Arquivos auxiliares:
 
 ###Objetivo:
 
-Tentar identificar um padrão onde teremos um maior registro de infrações. Será que um período da semana possui mais registro de infrações que outros? Será que um período do dia em dado período da semana apresenta 
-um maior registro de infrações? Trechos de rodovias tendem a apresentar um padrão de comportamento de condução ? Ou seja, será que um certo Km de uma rodovia tende a manter um padrão de infrações em certo perído do dia e da semana? Poderíamos associar horário/dia da semana com tipo de infração?
+Identificar um padrão onde há um maior registro de infrações. 
+
+Questionamentos a serem respondidos:
+
+-Será que um período da semana possui mais registro de infrações que outros? 
+-Será que um período do dia, em dado período da semana, apresenta um maior registros de infrações? 
+-Trechos de rodovias tendem a apresentar um padrão de comportamento de condução ? Ou seja, será que um certo Km de uma rodovia tende a manter um padrão de infrações em certo período do dia e da semana? 
+-É possível associar horário/dia da semana com algum tipo de infração?
 
 
 ```{r}
@@ -149,7 +155,7 @@ num_registros <- nrow(infracoes)
 infracoes_mais_comuns$proporcao <- round(infracoes_mais_comuns$registros/num_registros, digits = 2)
 ```
 
-Agora podemos plotar como ficou a proporção de infrações por tipo de infração, assim temos uma ideia melhor.
+Agora podemos plotar como ficou a proporção de infrações por tipo de infração, assim temos uma ideia melhor de como estão distribuídos nossos dados.
 
 ```{r}
 infracoes_mais_comuns %>%
@@ -172,7 +178,7 @@ top_3 <- infracoes_mais_comuns %>%
 top_3$des_infracao
 ```
 
-Bacana, agora uma coisa que me deixa curioso é saber o quanto essas infrações estão gerando de valor para os cofres públicos(não quero entrar aqui no mérito de que as multas são um instrumento necessário ou não e nem se as multas ocorrem por questão de má educação no trânsito ou não), visto que somente com esse projeto de lei mais recente(72422) já estar configurando quase 10% das infrações. Vamos calcular o valor que cada grupo de infrações rendeu(ou renderá) aos cofres públicos.
+Bacana, agora uma coisa que me deixa curioso é saber o quanto essas infrações estão gerando de valor para os cofres públicos (não quero entrar aqui no mérito de que as multas são um instrumento necessário ou não e nem se as multas ocorrem por questão de má educação no trânsito ou não). No entanto, é importante destacar que o projeto de lei mais recente(72422) já configura quase 10% das infrações no período analisado. Vamos calcular o valor que cada grupo de infrações rendeu(ou renderá) aos cofres públicos.
 
 Primeiramente temos que converter os valores da coluna 'valor' de character para double, depois vamos multiplicar o valor
 pela quantidade de ocorrências de cada infração.
@@ -347,7 +353,7 @@ infracoes %>%
            axis.text.x = element_text(angle = 90, hjust = 1),
            axis.title=element_text(size=14,face="bold"))
 ```
-
+  
 
 Muito interessante, novamente o mesmo padrão dos dados agrupados. Nenhuma das 3 infrações apresentou uma distribuição diferente, mesmo para a infração de código '74710', com poucos registros, ainda
 podemos notar uma distribuição bimodal.
