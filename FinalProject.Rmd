@@ -1,19 +1,27 @@
-
-```{r}
+```{r echo=FALSE}
 #knitr::opts_chunk$set(echo = TRUE)
 ```
 ---
-title: "Analisando Conjunto de dados da Polícia Rodoviária Federal: Infrações em Rodovias Federais"
-output: html_notebook
+title: "Padrões de Infrações de Trânsito em Rodovias Federais"
+author: "Pablo Gilvan Borges"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    df_print: kable
 editor_options: 
   chunk_output_type: inline
 ---
-Achei interessante trabalhar com tal conjunto de dados, visto que os mesmos apresentam dados registrados pela entidade responsável por
-fiscalizar e manter a ordem nas rodovias federais de todo o país.
+Decidi trabalhar com tal conjunto de dados, visto que os mesmos apresentam dados registrados pela entidade responsável por
+fiscalizar e manter a ordem nas rodovias federais de todo o país. Tenho interesse, visto que trafego a quase 6 anos diariamente por rodovias federais, em identificar quais 
+seriam os padrões de comportamento no trânsito. Me recordo de várias vezes me pegando desprevinido em um enorme engarrafamento onde sempre me questionava o que teria levado a tal situação.
+Sempre achei o trânsito algo tão incerto quanto o clima, temos horários propícios a transtornos e dor de cabeça, mas em dias atípicos nos vemos preso em um engarrafamento totalmente imprevisto 
+e ocasionado por uma série de eventos que muita das vezes me deixa curioso. Sei que com tal conjunto de dados não será possível analisar tal comportamento, mas com o mesmo quero identificar padrões
+e comportamentos de nossa sociedade no trânsito.
 
-Trabalha-se com o seguinte conjunto de dados principal:
+#### Trabalha-se com o seguinte conjunto de dados principal:
 
-1 - Infrações de Trânsito:
+##### 1 - Infrações de Trânsito:
 
   Arquivo: "dez.csv"
 
@@ -24,19 +32,19 @@ Trabalha-se com o seguinte conjunto de dados principal:
   Dicionário de dados: encontra-se no PDF "Dicionario de Variaveis_infracoes.pdf", ou no 
                        link: https://www.prf.gov.br/portal/dados-abertos/dicionario-de-dados-infracoes/at_download/file
                          
-Arquivos auxiliares:
+##### Arquivos auxiliares:
 
-1 - Listagem de Infrações por Código - CTB
+##### 1 - Listagem de Infrações por Código - CTB
 
   Arquivo: "tbl_infracao.csv"
 
   Link: http://repositorio.dados.gov.br/transportes-transito/transito/multas/dominio.zip
 
-###Objetivo:
+### Objetivo:
 
 Identificar um padrão onde há um maior registro de infrações. 
 
-Questionamentos a serem respondidos:
+##### Questionamentos a serem respondidos:
 
 -Será que um período da semana possui mais registro de infrações que outros? 
 -Será que um período do dia, em dado período da semana, apresenta um maior registros de infrações? 
@@ -44,7 +52,7 @@ Questionamentos a serem respondidos:
 -É possível associar horário/dia da semana com algum tipo de infração?
 
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(gridExtra)
 library(readr)
@@ -57,7 +65,7 @@ library(lubridate)
 ```
 
 ## Carregando dados
-```{r}
+```{r echo=FALSE}
 # Utilizei o encoding ISO-8859-1 pois temos bastantes caractres especiais: acentuação, cedilhas, etc.
 infracoes  <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'dez.csv', sep = ",")
 nrow(infracoes)
@@ -65,11 +73,11 @@ nrow(infracoes)
 
 Um conjunto de dados com tamanho bem expressívo para um único mês: 727 mil registros. 
 Agora vou carregar o conjunto auxiliar, que detalha cada código de infração registrado no dataframe 'infracoes' através
-da coluna "cod_infracao". Assim saberemos de que se trata a infração registrada, pois no conjunto de dados da PRF eles gravam somente
+da coluna "cod_infracao". Assim saberemos do que se trata a infração registrada, pois no conjunto de dados da PRF eles gravam somente
 o código da infração.
 
 #### Carregando o conjunto de dados que lista o descritivo de cada infração do CBT
-```{r}
+```{r echo=FALSE}
 tbl_infracao <- read.csv2(stringsAsFactors=FALSE, fileEncoding="ISO-8859-1", file = 'dominio/tbl_infracao.csv')
 ```
 
@@ -80,7 +88,7 @@ não estão descritas no mesmo. Os dados são de outubro de 2013.
 #### Inicialmente vamos listar as 10 infrações que mais aparecem no conjunto de dados.
 Vamos começar agrupando as infrações por código e com isso somar quantas infrações de cada tipo foram registrados. Após isso listar as 10 infrações com mais registros.
 
-```{r}
+```{r echo=FALSE}
 infracoes_mais_comuns <- group_by(infracoes, cod_infracao)%>%
   summarise(registros=n()) %>%
   arrange(-registros) %>%
@@ -89,7 +97,7 @@ infracoes_mais_comuns <- group_by(infracoes, cod_infracao)%>%
 
 Ok, temos uma listagem dos dados, mas, ao menos para minha pessoa, não consigo saber ao certo quais infrações competem cada código. Agora vamos associar os registros das infrações mais comuns com o descritivo de cada infração.
 
-```{r}
+```{r echo=FALSE}
 infracoes_mais_comuns <- infracoes_mais_comuns %>%
   left_join(tbl_infracao, by = "cod_infracao") 
 
@@ -112,7 +120,7 @@ https://central3.to.gov.br/arquivo/320049/
 
 Vamos então atualizar nosso dataframe de "infracoes_mais_comuns" para que tenhamos um descritivo de quais infrações remetem a cada código. Vale ressaltar que não acho necessário atualizar o dataframe de "infracoes", visto que repetir uma grande quantidade de informações para um conjunto de 700 mil linhas vai consumir mais memória e atrapalhar no processo de análise.
 
-```{r}
+```{r echo=FALSE}
 infracoes_mais_comuns$des_infracao[infracoes_mais_comuns$cod_infracao == 72422] <- "Em movimento de dia, deixar de manter acesa luz
 baixa nas rodovias."
 
@@ -126,7 +134,7 @@ infracoes_mais_comuns$des_infracao
 Para podermos usar os dados de forma a categorizar os mesmos, precisamos primeiro converter os identificadores das infrações de
 Inteiro para Factor, assim o R não irá tratar os dados como uma variável contínua e sim categórica.
 
-```{r}
+```{r echo=FALSE}
 infracoes_mais_comuns$cod_infracao <- as.factor(infracoes_mais_comuns$cod_infracao)
 infracoes$cod_infracao <- as.factor(infracoes$cod_infracao)
 ```
@@ -134,7 +142,7 @@ infracoes$cod_infracao <- as.factor(infracoes$cod_infracao)
 
 Ok, agora podemos plotar os registros e assim ter um comparativo mais visual dos dados.
 
-```{r}
+```{r echo=FALSE}
 infracoes_mais_comuns %>%
   ggplot(mapping = aes(x = cod_infracao, y = registros))+
     geom_bar(stat = "identity")+
@@ -235,7 +243,7 @@ infracoes$dat_infracao <- as.Date(infracoes$dat_infracao, "%Y-%m-%d")
 #Agora vamos criar uma nova coluna e colocar na mesma qual dia de semana ela representa
 
 infracoes$dia_semana <- as.numeric(format(infracoes$dat_infracao, format = "%u"))
-infracoes$tipo_dia_semana <- ifelse(infracoes$dia_semana >= 6, "Util", "Fim Semana")
+infracoes$tipo_dia_semana <- ifelse(infracoes$dia_semana < 6, "Util", "Fim Semana")
 
 agrupado_tipo_dia <- group_by(infracoes, tipo_dia_semana) %>%
   summarise(registros=n())
@@ -249,8 +257,7 @@ agrupado_tipo_dia %>%
     xlab("Período da Semana")
 ```
 
-Finais de semana apresentam bem mais registros de infrações que dias de semana, seria interessante ver isso de forma proporcional, visto que 
-um final de semana é composto por 2 dias, enquanto dias 'úteis' seriam 5. Mas também precisamos calcular o número de dias uteis no mês, visto que o conjunto de dados compreende um único mês. Seria interessante criar uma função para isso, assim quando quisermos analisar outros meses
+Finais de semana apresentam bem mais registros de infrações que dias de semana se verificarmos de forma proporcional, visto que um final de semana é composto por 2 dias, enquanto dias 'úteis' seriam 5. Mas também precisamos calcular o número de dias uteis no mês, visto que o conjunto de dados compreende um único mês. Seria interessante criar uma função para isso, assim quando quisermos analisar outros meses
 podemos aproveitar o código.
 
 ```{r}
@@ -281,7 +288,7 @@ agrupado_tipo_dia %>%
     xlab("Período da Semana")
 ```
 
-Agora temos uma visão mais clara, finais de semana apresentam quase 80% dos registros de infração. Um valor muito alto se considerarmos a quantidade de dias que compreendem dentro de 1 mês.
+Agora temos uma visão mais clara, finais de semana apresentam quase 60% dos registros de infração. Um valor muito alto se considerarmos a quantidade de dias que compreendem dentro de 1 mês.
 Já temos uma ideia de como os dados estão agrupados por dia e por período(dia de semana ou final de semana). Vamos validar agora como os dados estão distribuídos por horário.
 
 ### Qual seria a faixa de horários com maior registro de infrações ?
@@ -291,7 +298,6 @@ Vamos focar inicialmente somente na faixa de horário, esquecendo o dia da seman
 algo como '10:00 - 11:00', tudo que estivesse nesse interválo de tempo seria agrupado. Vamos trabalhar esses dados para melhor exibir os registros.
 
 ```{r}
-?as_datetime
 convert_to_time_range <- function(str_value){
   if(is.null(str_value) || nchar(str_value) < 8){
       stop("\n\nFormato inválido. Horário deve estar no formato HH:mm:ss .: ", str_value)
@@ -379,6 +385,9 @@ infracoes %>%
 
 Mesma distribuição dos demais, como já dito, provavelmente o período de ação da PRF deve ser mair forte neste horário, que seriam horários de pico, o que vai contra
 essa afirmação é termos o mesmo comportamento tanto para dias de semana quanto para finais de semana.
+**Update**: conversei com um policial da PRF e o mesmo me falou que grande parte dessas infrações de velocidades são oriundas de radar móvel, o que faz repensar que a baixa no fluxo
+de infrações no período das 12 até as 14 horas seja referente ao efetivo policial e sim referente ao fluxo de veículos.
+
 Creio que devemos deixar um pouco de lado o horário da infração e focar em outro atributo: Km da infração.
 
 ### Trecho com maior número de infrações
@@ -453,8 +462,8 @@ trechos_mais_infracoes %>%
     facet_wrap(~tipo_dia_semana, ncol = 2)
 ```
 
-Interessante, aqui já temos novamente a distribuição bimodal de forma mais acentuada nos finais de semana e podemos notar a mesma se formando em dias de semana. O interessante é notar que nos finais de 
-semana temos um registro maior de infrações no período daas 21:00 até a 1:00, note esse comportamento no KM 2 do DF.
+Interessante, aqui já temos novamente a distribuição bimodal de forma mais acentuada nos dias de semana e podemos notar a mesma se formando em finais de semana. O interessante é notar que nos dias de 
+semana temos um registro elevado de infrações no período daas 21:00 até a 1:00, note esse comportamento no KM 2 do DF.
 
 
 ```{r}
@@ -473,8 +482,8 @@ trechos_mais_infracoes %>%
     facet_wrap(~tipo_dia_semana, ncol = 2)
 ```
 
-Podemos notar que a distribuição dos dados para finais de semana no KM 2(DF) é um pouco semelhante a distribuição do conjunto com os demais trechos, principalmente o que remete
-ao período das 21:00 até as 01:00, mas nessa distribuição podemos notar um formato de uma distribuição simetrica na parte central, sabendo que isso seria um range de horários e a forma que estamos exibindo os mesmos poderia exibir uma distribuição bimodal para o mesmo, pois se movermos o gráfico um pouco para a esquerda ou mesmo direita poderamos notar as duas, vamos dizer quase, se formando. Já temos um cenário bem diferente para dias de semana, onde temos uma distribuição mais centralizada nos horários entre 05:00 e 17:00.
+Podemos notar que a distribuição dos dados para dias de semana no KM 2(DF) é um pouco semelhante a distribuição do conjunto com os demais trechos, principalmente o que remete
+ao período das 21:00 até as 01:00, mas nessa distribuição podemos notar um formato de uma distribuição simetrica na parte central, sabendo que isso seria um range de horários e a forma que estamos exibindo os mesmos poderia exibir uma distribuição bimodal para o mesmo, pois se movermos o gráfico um pouco para a esquerda ou mesmo direita poderamos notar as duas, vamos dizer quase, se formando. Já temos um cenário bem diferente para finais de semana, onde temos uma distribuição mais centralizada nos horários entre 05:00 e 17:00.
 
 ```{r}
 trechos_mais_infracoes %>%
@@ -492,7 +501,7 @@ trechos_mais_infracoes %>%
     facet_wrap(~tipo_dia_semana, ncol = 2)
 ```
 
-Já para esse conjunto de dados temos uma distruibuição bimodal para finais de semana e para dias e semana uma distribuição quase assímétrica, se "forçarmos" um pouco a visão podemos quase
+Já para esse conjunto de dados temos uma distruibuição bimodal para dias de semana e para finais de semana uma distribuição quase assímétrica, se "forçarmos" um pouco a visão podemos quase
 perceber uma distribuição bimodal se formando. 
 
 Vamos listar quais são os 5 tipos de infrações mais decorrentes deste conjunto de dados.
@@ -605,10 +614,96 @@ ufs_maior_ocorrencia %>%
   group_by(uf_infracao, num_km_infracao)%>%
   summarise(registros=n()) %>%
     ggplot(mapping = aes(x = num_km_infracao, y = registros))+
-    geom_line()+
+    geom_point()+
       ylab("Quantidade")+
       xlab("KM")+
   facet_wrap(~uf_infracao, ncol = 2)
 ```
+
+Um caso interessante que de todos os 5 estados o Rio de Janeiro é o menor, mas apresenta uma frequência bem alta de infrações e em kilômetros bem próximos, claro que podemos olhar pelo lado de que o estado é menor, logo possui menos kilômetros de rodovias, mas se olharmos para São Paulo, por exemplo, ele tem uma distribuição bem mais ampla  e com uma frequência menor para cada trecho. Vou olhar somente para o estado do Rio de Janeiro.
+
+##### Distribuição de Infrações por KMs - RJ
+
+```{r}
+ufs_maior_ocorrencia %>%
+  filter(uf_infracao == 'RJ') %>%
+  group_by(uf_infracao, num_km_infracao)%>%
+  summarise(registros=n()) %>%
+    ggplot(mapping = aes(x = num_km_infracao, y = registros))+
+    geom_point()+
+      ylab("Quantidade")+
+      xlab("KM")
+```
+
+Kms entre 150 e 350 apresentam um alto registro de infrações, vamos listar e verificar quantos trechos temos dentro dessa faixa de valores.
+
+```{r}
+kms_rj <- ufs_maior_ocorrencia %>%
+  filter(uf_infracao == 'RJ' & num_km_infracao >= 150 & num_km_infracao <= 350) %>%
+  group_by(uf_infracao, num_km_infracao)
+
+
+paste("Total de", format(length(unique(kms_rj$num_km_infracao))), " trechos encontrados.")
+```
+
+```{r}
+kms_rj %>%
+  group_by(uf_infracao, num_km_infracao)%>%
+  summarise(registros=n()) %>%
+    ggplot(mapping = aes(x = num_km_infracao, y = registros))+
+    geom_col()+
+      ylab("Quantidade")+
+      xlab("KM")
+```
+
+#### Infrações mais frequentes entre os trechos com mais infrações - RJ
+
+```{r}
+infracoes_mais_comuns_RJ <- group_by(kms_rj, cod_infracao)%>%
+  summarise(registros=n()) %>%
+  arrange(-registros) %>%
+  head(n = 5)
+
+infracoes_mais_comuns_RJ %>%
+    ggplot(mapping = aes(x = cod_infracao, y = registros))+
+      geom_bar(stat = "identity")+
+      ylab("Quantidade")+
+      xlab("Cód. Infração")+
+      theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+           axis.title=element_text(size=14,face="bold"))
+```
+
+Novamente o mesmo padrão de infrações nos 3 primeiros casos, para as outras duas teremos que listar o descritivo de cada uma, mas são infrações que configuram entre os 10 tipos de infrações com mais registros.
+
+```{r}
+tbl_infracao$des_infracao[tbl_infracao$cod_infracao %in% c(51851, 58197)]
+```
+
+##### Distribuição das Infrações entre os trechos com mais infrações do RJ
+
+```{r}
+kms_rj %>%
+  filter(cod_infracao %in% c(74550, 74630, 72422)) %>%
+  group_by(horario, cod_infracao) %>%
+    summarise(registros=n()) %>%
+    ggplot(mapping = aes(x = horario, y = registros, color=cod_infracao, fill=cod_infracao))+
+    geom_bar(stat = "identity")+
+      ylab("Quantidade")+
+      xlab("Horário")+
+      theme(plot.title = element_text(color="red", size=12, face="bold.italic"),
+           axis.text.x = element_text(angle = 90, hjust = 1),
+           axis.title=element_text(size=14,face="bold"))
+```
+Novamente o mesmo padrão da distribuição bimodal dos dados. 
+
+## Reflexão
+
+Podemos notar que temos o mesmo padrão de distribuição dos dados, as 3 infrações que mais se repetem pelo país são uma constante em quase todos os cenários analisados, creio que uma busca mais a fundo e 
+detalhada nos levaria a encontrar casos atípicos como trechos onde não temos tanto fluxo de veículos. Mas se os problemas estão onde temos um fluxo maior de veículos creio que olhar para demais trechos não nos 
+ajudaria a esclarecer os padrões encontrados em demais trechos sem um olhar de alguém com conhecimento de domínio. Uma das ideias iniciais do projeto era cruzar estes dados com os dados de acidentes, assim podendo ter 
+um olhar mais amplo e ao mesmo tempo mais detalhado da situação do trânsito brasileiro. Creio que perguntas mais pontuais, como: quais horários e períodos da semana costuma-se detectar mais infrações do tipo evasão de barreira poderiam encontrar um padrão diferenciado por localidade.
+
+
+
 
 
